@@ -1,7 +1,7 @@
 {
   "name": "vibe",
   "description": "Structured workflows for Claude Code. Understand codebases, track decisions, catch risks.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": {
     "name": "Jack Lutz",
     "email": "jack@jwlutz.com",

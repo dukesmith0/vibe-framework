@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Structured workflows for Claude Code inspired by Boris Cherny's methodology. Persistent codebase understanding, decision tracking, risk scanning, and disciplined development workflows.",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "plugins": [
     {
       "name": "vibe",
       "source": "./",
       "description": "Structured workflows for Claude Code. Understand codebases, track decisions, catch risks.",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "author": {
         "name": "Jack Lutz",
         "email": "jack@jwlutz.com"
