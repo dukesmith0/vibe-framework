@@ -8,7 +8,7 @@ Use TodoWrite to track phases.
 ## Pre-compute
 ```bash
 git status -s 2>/dev/null | head -5; ls .vibe/ 2>/dev/null; head -1 .vibe/current.md 2>/dev/null
-test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
+test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "const p=require('./package.json');if(p.scripts?.test){console.log('test:'+p.scripts.test);process.exit(0)}else{process.exit(1)}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
 ```
 If no `.vibe/`: "No vibe context found. Run /vibe:init first."
 
@@ -29,8 +29,10 @@ Dispatch tester (`subagent_type="vibe:tester"` or `"general-purpose"`): run new 
 ## Phase 5 - Approve tests
 **[STOP]** Present tests with what each validates. User approves the contract.
 
-## Phase 6 - Commit tests
-Commit tests only. Contract locked. **Tests must NOT be modified after this.**
+## Phase 6 - Lock tests
+**[STOP]** "Tests approved. Commit now to lock the contract? [yes/no]"
+If yes: commit tests only. **Tests must NOT be modified after this.**
+If no: proceed but warn that tests may be modified accidentally.
 
 ## Phase 7 - Implement (GREEN)
 Dispatch engineer (`subagent_type="vibe:engineer"` or `"general-purpose"`). Prompt with: committed test files, understanding.md patterns. Instruction: "Write minimal code to pass ALL tests. Do not modify tests. List assumptions in output."
@@ -46,4 +48,4 @@ Dispatch tester (`subagent_type="vibe:tester"` or `"general-purpose"`): run all 
 - `bugs.md`: bugs found (next ID + impact)
 - `debug/`: regression tests for resolved bugs
 - `current.md`: clear to `# No active task`
-Commit implementation. Summary: tests, files changed, iterations, assumptions.
+**[STOP]** Present summary: tests, files changed, iterations, assumptions. "Commit implementation? [yes/no]"

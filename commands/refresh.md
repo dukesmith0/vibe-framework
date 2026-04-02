@@ -19,13 +19,13 @@ test -f pytest.ini && echo "test:pytest" || \
 (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || \
 (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || \
 (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || \
-(node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || \
+(node -e "const p=require('./package.json');if(p.scripts?.test){console.log('test:'+p.scripts.test);process.exit(0)}else{process.exit(1)}" 2>/dev/null) || \
 (test -f go.mod && echo "test:go") || \
 (test -f Cargo.toml && echo "test:cargo") || \
 echo "test:none"
 
 # Playwright
-test -f playwright.config.ts && echo "playwright:yes" || test -f playwright.config.js && echo "playwright:yes" || \
+(test -f playwright.config.ts -o -f playwright.config.js) && echo "playwright:yes" || \
 (grep -q playwright package.json 2>/dev/null && echo "playwright:yes") || echo "playwright:no"
 ```
 

@@ -20,18 +20,18 @@ test -f pytest.ini && echo "test:pytest" || \
 (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || \
 (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || \
 (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || \
-(node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || \
+(node -e "const p=require('./package.json');if(p.scripts?.test){console.log('test:'+p.scripts.test);process.exit(0)}else{process.exit(1)}" 2>/dev/null) || \
 (grep -q "^test:" Makefile 2>/dev/null && echo "test:make") || \
 (test -f go.mod && echo "test:go") || \
 (test -f Cargo.toml && echo "test:cargo") || \
 echo "test:none"
 
 # Language detection
-ls *.py **/*.py 2>/dev/null | head -1 && echo "lang:python"
-ls *.ts *.tsx **/*.ts **/*.tsx 2>/dev/null | head -1 && echo "lang:typescript"
-ls *.js *.jsx **/*.js **/*.jsx 2>/dev/null | head -1 && echo "lang:javascript"
-ls *.go **/*.go 2>/dev/null | head -1 && echo "lang:go"
-ls *.rs **/*.rs 2>/dev/null | head -1 && echo "lang:rust"
+find . -maxdepth 3 -name "*.py" -not -path "./.git/*" -not -path "./.vibe/*" 2>/dev/null | head -1 | grep -q . && echo "lang:python"
+find . -maxdepth 3 -name "*.ts" -o -name "*.tsx" 2>/dev/null | head -1 | grep -q . && echo "lang:typescript"
+find . -maxdepth 3 -name "*.js" -o -name "*.jsx" 2>/dev/null | head -1 | grep -q . && echo "lang:javascript"
+find . -maxdepth 3 -name "*.go" 2>/dev/null | head -1 | grep -q . && echo "lang:go"
+find . -maxdepth 3 -name "*.rs" 2>/dev/null | head -1 | grep -q . && echo "lang:rust"
 ```
 
 ## Phase 1 - Version control

@@ -87,7 +87,7 @@ Record user's chosen approach as `[USER]` decision in `decisions.md`:
 - Archive existing plan in `plans.md` if any (to `decisions.md` Plan Archive). Then clear `plans.md`.
 - Write new plan to `plans.md` (with Goal, Approach, Success Criteria, Tasks sections).
 - Update `current.md` with initial progress checklist (same format as go Phase 5, starting at phase 6).
-- Automatically begin `/vibe:go` workflow at Phase 6 (implement). Plan already written by this command, so go skips Phases 2-5 (explore+plan). Go reads `plans.md` for the plan and `current.md` for state.
+- Automatically begin `/vibe:go` workflow at Phase 4 (implement). Plan already written by this command, so go skips Phases 1-3 (entry routing, explore, plan+approve). Go reads `plans.md` for the plan and `current.md` for state.
 
 **Save for later:**
 - Append to `future.md`: `- [Goal summary]. [Approach chosen]. [Priority/context].`
