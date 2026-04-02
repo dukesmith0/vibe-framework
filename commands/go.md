@@ -1,159 +1,62 @@
 ---
-description: Start a task with the full agent workflow
-argument-hint: <what you want to build or fix>
+description: Full development workflow - explore, plan, implement, review, verify
+argument-hint: <task>
 ---
 
-Execute a development task using subagent orchestration: explore → plan → implement → review + test → risk check → verify.
+Use TodoWrite to track phases.
 
-## Pre-compute Context
-
+## Pre-compute
 ```bash
-# Gather state so Claude doesn't waste turns discovering it
-echo "=== GIT STATUS ===" && git status --short 2>/dev/null || echo "Not a git repo"
-echo "=== TEST RUNNER ===" && (test -f pytest.ini && echo "pytest" || test -f pyproject.toml && grep -q pytest pyproject.toml && echo "pytest" || test -f package.json && node -e "const p=require('./package.json'); p.scripts?.test ? console.log('npm test') : process.exit(1)" 2>/dev/null || test -f Makefile && grep -q "^test:" Makefile && echo "make test" || echo "No test runner detected")
-echo "=== VIBE CONTEXT ===" && (test -f .vibe/understanding.md && echo "Understanding: exists" && head -20 .vibe/understanding.md || echo "Understanding: none — consider running /vibe:init")
-echo "=== VIBE RISKS ===" && (test -f .vibe/risks.md && echo "Risks baseline: exists" || echo "Risks baseline: none")
-echo "=== VIBE LEARNINGS ===" && (test -f .vibe/learnings.md && cat .vibe/learnings.md || echo "No learnings yet")
+git status -s 2>/dev/null | head -5; git branch --show-current 2>/dev/null
+ls .vibe/ 2>/dev/null; head -5 .vibe/plans.md 2>/dev/null; head -1 .vibe/current.md 2>/dev/null
+test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
+test -f playwright.config.ts -o -f playwright.config.js && echo "playwright:yes" || (grep -q playwright package.json 2>/dev/null && echo "playwright:yes") || echo "playwright:no"
+node -e "try{const p=require('./package.json');console.log('devserver:'+(p.scripts?.dev||p.scripts?.start||p.scripts?.serve||'none'))}catch{}" 2>/dev/null
 ```
+If no `.vibe/`: "No vibe context found. Run /vibe:init first."
 
-## Phase 1: Understand
+## Phase 1 - Entry routing
+Read `.vibe/` context via vibe-context skill. Then route:
+- `plans.md` has matching plan? Offer to continue (skip to Phase 4).
+- `plans.md` has different plan? Ask: continue existing or start new?
+- No plan, no task arg? "Run `/vibe:plan <goal>` or provide a task." Suggest `/vibe:oneshot` for simple tasks.
+- Task is "fix #N"? Read bug from `bugs.md`. If Resolved: inform user. If Open/Deferred: use as context.
+- Task is "fix #RN"? Read risk from `risks.md`. If Resolved: inform user. If active: use as context.
+- `current.md` shows active task? Ask: resume, abandon, or start new?
 
-Spawn an **explorer** subagent via the Task tool to analyze the relevant code:
+## Phase 2 - Explore
+Dispatch explorer (`subagent_type="vibe:explorer"` or `"general-purpose"`). Prompt with: task description, understanding.md (architecture, patterns), related risks. Ask: analyze code, identify patterns, flag risks/test gaps, report with file:line refs. If general-purpose fallback: paste understanding.md content directly.
 
-```
-Use the Task tool with subagent_type="vibe:explorer" (or "general-purpose" if unavailable) to:
-- Read .vibe/understanding.md and .vibe/learnings.md for project context
-- Explore the files relevant to [TASK]
-- Identify which files need to change
-- Note patterns to follow
-- Flag any risks or gotchas
-- If Context7 is available, look up unfamiliar library/framework APIs before describing them
-```
+## Phase 3 - Plan + approve
+Present 1-3 approaches with trade-offs. Define success criteria as `- [ ]` checkboxes.
+**[STOP]** Wait for approval. Record choice as `[USER]` in `decisions.md`. Write plan to `plans.md`. Update `current.md` with phase progress.
 
-Review the explorer's findings. Summarize for the user before proceeding.
+## Phase 4 - Implement
+Dispatch engineer (`subagent_type="vibe:engineer"` or `"general-purpose"`). Prompt with: task, approach, files to modify, patterns, success criteria. Instruction: "Generate/update debug/ tests. List assumptions and choices in output."
+- `DONE`: write assumptions to `decisions.md` as `[CLAUDE]`. Proceed.
+- `DONE_WITH_CONCERNS`: read concerns, write assumptions. Address correctness doubts first.
+- `BLOCKED`: present to user. 3-fix rule: do not attempt fix #4.
+- `NEEDS_CONTEXT`: provide info, re-dispatch.
 
-## Phase 2: Plan
+## Phase 5 - Review + test
+Dispatch reviewer + tester **in parallel (single message)**:
+- **Reviewer** (`vibe:reviewer`): Stage 1: spec compliance. Stage 2: code quality/bugs/security (CRITICAL/HIGH/MEDIUM/LOW). Stage 3: functionality. Stage 4: risk scan vs baseline. Stage 5: simplifications.
+- **Tester** (`vibe:tester`): project tests + debug/ suite + linters. Playwright if frontend changes.
 
-This phase runs in the **main conversation** (needs user interaction).
+## Phase 6 - Review gate
+- CRITICAL/HIGH: **[STOP]** fix required. User approves simplifications individually.
+- MEDIUM: present to user, approve or fix.
+- LOW: report only.
+If fixes needed: re-dispatch engineer, re-review. Max 3 cycles.
 
-Present 1-3 approaches to the user:
+## Phase 7 - Update .vibe/ + verify
+- `decisions.md`: [USER/CLAUDE] decisions + assumptions
+- `bugs.md`: bugs found (next ID, impact level)
+- `risks.md`: scan + baseline update. Resolved risks to Resolved section.
+- `understanding.md`: if architecture changed
+- `debug/`: regression tests for resolved bugs
+- `current.md`: progress
+Check each success criterion. If any unmet, return to Phase 4.
 
-```
-To implement [TASK], I see these approaches:
-
-Option A: [Name]
-  What: [description]
-  Files: [list]
-  Trade-off: [pro/con]
-
-Option B: [Name] (if applicable)
-  What: [description]
-  Files: [list]
-  Trade-off: [pro/con]
-
-Recommendation: [A or B] because [reason]
-```
-
-### Success Criteria
-
-Before writing any code, define what "done" looks like:
-- [ ] [Specific measurable outcome 1]
-- [ ] [Specific measurable outcome 2]
-- [ ] [Test that should pass]
-- [ ] [Behavior user should observe]
-
-**STOP and wait for user approval before writing any code.**
-
-## Phase 3: Implement
-
-After user approves, spawn an **engineer** subagent via the Task tool:
-
-```
-Use the Task tool with subagent_type="vibe:engineer" (or "general-purpose" if unavailable) to:
-- Implement the approved plan: [plan details]
-- Files to change: [list from plan]
-- Patterns to follow: [from explorer findings]
-- Read .vibe/understanding.md for project conventions
-- If Context7 is available, look up library APIs before using them
-- Snapshot current risks from .vibe/risks.md
-- Create/update .vibe/work/current.md to track the task
-```
-
-## Phase 4: Review + Test (parallel)
-
-Spawn **reviewer** and **tester** subagents **in parallel** via the Task tool (both in a single message):
-
-**Reviewer subagent:**
-```
-Use the Task tool with subagent_type="vibe:reviewer" (or "general-purpose" if unavailable) to:
-- Adversarially review the changes just made
-- Check for logic errors, security issues, pattern deviations
-- Verify library APIs are used correctly (look up docs via Context7 if available)
-- Read .vibe/understanding.md for project patterns
-- Output: issues found with severity, verdict (APPROVE / NEEDS FIXES)
-```
-
-**Tester subagent (in parallel):**
-```
-Use the Task tool with subagent_type="vibe:tester" (or "general-purpose" if unavailable) to:
-- Run the test suite: [test command from pre-compute]
-- Run linters if available
-- Report pass/fail with counts
-- Output: test results, lint results, verdict (READY / NEEDS FIXES)
-```
-
-If either finds issues, fix them and re-run. **Iterate until both pass.**
-
-## Phase 5: Risk Check
-
-This phase runs in the **main conversation**.
-
-Scan modified files for new risks:
-
-**Check for:**
-- New TODO/FIXME/HACK comments added
-- Hardcoded values that look like secrets
-- Missing error handling in new code
-- Functions that became too long
-- Bare except clauses
-
-**Compare to baseline:**
-- What risks existed before?
-- What risks exist now?
-- Did this task ADD any risks?
-
-**If new critical risks found, STOP and ask user.**
-
-## Phase 6: Verify & Complete
-
-This phase runs in the **main conversation**.
-
-Check off each success criterion from Phase 2:
-- Did each specific outcome happen?
-- Do tests pass?
-- Does the behavior match what was defined?
-
-If any criteria are unmet, go back and fix before completing.
-
-When everything passes:
-
-```
-Task complete
-
-Changes made:
-  - [file] — [what changed]
-
-Decisions recorded:
-  - [key decision and why]
-
-Risks: [no new risks / N new warnings acknowledged]
-Tests: passing
-Success criteria: all met
-
-Ready to commit? [yes / show diff / make changes]
-```
-
-Update `.vibe/decisions.md` with key decisions.
-Update `.vibe/risks.md` with current state.
-
-To record learnings from this task, the user can run `/vibe:learn`.
+## Phase 8 - Complete
+Clear `current.md` to `# No active task`. Archive plan to `decisions.md` Plan Archive. Clear `plans.md`. Present summary: changes, decisions, tests, risk delta.

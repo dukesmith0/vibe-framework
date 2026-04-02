@@ -1,30 +1,35 @@
 ---
 name: risk-detection
-description: Detects code risks and security issues. Triggers when reviewing code, checking for problems, or scanning for issues.
+description: Detects code risks and security issues during review, risk scanning, or code evaluation. Writes findings to risks.md with impact level and file:line references.
 ---
 
-When scanning for risks, look for these patterns:
+## Patterns
 
-## Critical (Security/Correctness)
-Hardcoded secrets
-pattern: (api_key|password|secret|token)\s*=\s*["'][^"']+["']
-exclude: test files, example configs
-SQL injection
-pattern: execute(.%s|execute(.+|execute(f"|cursor.execute(.*format
-Bare except
-pattern: except\s*:
-eval/exec with variables
-pattern: eval(|exec(
+Scan using Grep with these patterns. Tag each finding with impact level and file:line.
 
-## Warning (Maintainability)
-TODOs
-pattern: (TODO|FIXME|HACK|XXX):?
-Long functions (check line count between def and next def/class/EOF)
-Deep nesting (4+ levels of indentation)
+**Language-agnostic (all projects):**
+- [CRITICAL] Hardcoded secrets: `(api_key|password|secret|token|private_key)\s*=\s*["'][^"']+["']`
+- [HIGH] `.env` files committed to git (check .gitignore)
+- [MEDIUM] Functions >100 lines
+- [MEDIUM] Nesting >4 levels deep
+- [MEDIUM] TODO/FIXME/HACK/XXX clusters (>3 in one file)
+- [LOW] Files >500 lines
 
-## Info (Minor)
-Print statements
-pattern: print(
-Unused imports (import X but X never used)
+**JavaScript/TypeScript:**
+- [CRITICAL] `eval()`, `new Function()`
+- [HIGH] `innerHTML`, `dangerouslySetInnerHTML`
+- [HIGH] Unvalidated `req.params`, `req.query`, `req.body`
+- [LOW] `console.log` in production code (not in debug/ or test files)
 
-When reporting, always include file:line references.
+**Python:**
+- [CRITICAL] `exec()`, `eval()`
+- [HIGH] `cursor.execute` with string formatting (SQL injection)
+- [HIGH] Bare `except:` (swallows all errors)
+- [LOW] `print()` in production code (not in debug/ or test files)
+
+## Output
+
+Write findings to `risks.md` using sequential IDs (#R1, #R2...). One line per risk, max two lines.
+Format: `#RN [IMPACT] Description. file:line (found DATE)`
+
+Compare against existing risks.md baseline. Report delta: added (list), resolved (list), net change per impact level.

@@ -1,58 +1,70 @@
 ---
-description: Smart commit, push, and optionally create a PR
-argument-hint: [optional: commit message hint]
+description: Smart commit with test gate, .vibe/ sync, and optional PR creation
+argument-hint: [message hint]
 ---
 
-Commit current changes with a well-crafted message, push, and optionally create a PR.
-
-## Pre-compute Context
+## Pre-compute
 
 ```bash
-echo "=== STAGED ===" && git diff --cached --stat 2>/dev/null
-echo "=== UNSTAGED ===" && git diff --stat 2>/dev/null
-echo "=== UNTRACKED ===" && git ls-files --others --exclude-standard 2>/dev/null
-echo "=== BRANCH ===" && git branch --show-current 2>/dev/null
-echo "=== REMOTE ===" && git remote -v 2>/dev/null | head -2
-echo "=== RECENT COMMITS ===" && git log --oneline -5 2>/dev/null
-echo "=== DIFF ===" && git diff 2>/dev/null && git diff --cached 2>/dev/null
+# Commit state
+git status -s 2>/dev/null
+git diff --staged --stat 2>/dev/null
+git diff --stat 2>/dev/null
+git log --oneline -5 2>/dev/null
+git branch --show-current 2>/dev/null
+git remote -v 2>/dev/null | head -2
+
+# Testing
+test -f pytest.ini && echo "test:pytest" || \
+(grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || \
+(test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || \
+(test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || \
+(node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || \
+(test -f go.mod && echo "test:go") || \
+(test -f Cargo.toml && echo "test:cargo") || \
+echo "test:none"
 ```
 
-## Process
+If no changes staged or unstaged: "No changes to commit." Exit.
+If no git: "No git repository. Run `/vibe:init` to set up."
 
-1. **Analyze changes**: Look at all staged, unstaged, and untracked files. Understand what changed and why.
+## Phase 1 - Test gate
 
-2. **Stage relevant files**: Add files that belong to this logical change. Don't mix unrelated changes.
-   ```bash
-   git add [specific files]
-   ```
+Run `debug/` suite (if exists). If failures: report and do NOT proceed. Tests must pass.
+Run project tests (if configured). Same gate. Both must pass before committing.
 
-3. **Draft commit message**: Do NOT add Co-Authored-By lines to commit messages. The user's attribution setting handles this automatically.
+## Phase 2 - Analyze
 
-   Follow the project's existing commit style (check recent commits above). If no clear style, use conventional commits:
-   - `feat:` for new features
-   - `fix:` for bug fixes
-   - `refactor:` for restructuring
-   - `test:` for test changes
-   - `docs:` for documentation
+What changed and why. Group into logical commit(s). Read `plans.md` and `current.md` for context on what was being worked on.
 
-   Keep the first line under 72 characters. Add a body if the "why" isn't obvious.
+## Phase 3 - .vibe/ sync (read AND write)
 
-4. **Show the user**: Display the proposed commit message and files to be committed.
+Check and WRITE updates to these files:
+- `understanding.md`: if diff affects architecture/patterns (new top-level dirs, entry points, frameworks), update the relevant sections now.
+- `bugs.md`: if diff resolves any open bugs (code at file:line fixes the described issue), move entry to Resolved section with date and regression test ref. Write the change now.
+- `risks.md`: if diff resolves any risks (file:line pattern no longer matches), move entry to Resolved section with date. Write the change now.
+- `debug/`: if a bug was resolved but has no regression test in debug/, generate one now.
 
-   **STOP and wait for user approval.**
+## Phase 4 - Draft message
 
-5. **Commit and push**:
-   ```bash
-   git commit -m "[message]"
-   git push
-   ```
+- Concise. Follow project commit style (look at `git log --oneline` for convention).
+- First line under 72 chars. Add body if "why" isn't obvious.
+- Use conventional commits (feat:/fix:/chore:) only if project already uses them.
+- **Do NOT add Co-Authored-By lines. User's attribution setting handles this.**
 
-6. **Offer PR**: If on a feature branch (not main/master), ask:
-   "Create a pull request? [yes / no]"
+## Phase 5 - Approve
 
-   If yes, create with `gh pr create`.
+**[STOP]** Present staged changes + draft message for approval. User can edit message.
 
-## If commit fails
+## Phase 6 - Execute
 
-- Pre-commit hook failure: fix the issue, re-stage, create a NEW commit (never amend)
-- Push failure: check if remote is ahead, pull if needed
+- Stage relevant files if not already staged. Commit with approved message.
+- Push to remote if remote exists.
+- If push fails: check if remote is ahead (`git fetch && git status`). Pull if needed, retry.
+- If pre-commit hook fails: display error. Ask user to fix or suggest `/vibe:review` to auto-fix style issues. Re-stage, create NEW commit (never amend).
+
+## Phase 7 - PR offer
+
+If on feature branch (not main/master) and remote exists:
+"Create a pull request? [yes/no]"
+If yes: `gh pr create` with title from commit message and body summarizing changes.

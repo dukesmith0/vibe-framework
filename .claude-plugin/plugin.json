@@ -1,14 +1,23 @@
 {
   "name": "vibe",
-  "description": "Structured workflows for Claude Code. Understand codebases, track decisions, catch risks.",
-  "version": "2.1.0",
+  "description": "Persistent project context, auto-generated test harness, and disciplined development workflows for Claude Code.",
+  "version": "3.0.0",
   "author": {
-    "name": "Jack Lutz",
-    "email": "jack@jwlutz.com",
-    "url": "https://github.com/jwlutz"
+    "name": "dukesmith0",
+    "url": "https://github.com/dukesmith0"
   },
-  "repository": "https://github.com/jwlutz/claude_code_framework",
-  "homepage": "https://github.com/jwlutz/claude_code_framework",
+  "contributors": [
+    {
+      "name": "Jack Lutz",
+      "url": "https://github.com/jwlutz",
+      "note": "Original creator of claude_code_framework"
+    }
+  ],
+  "repository": "https://github.com/dukesmith0/vibe-framework",
+  "homepage": "https://github.com/dukesmith0/vibe-framework",
   "license": "MIT",
-  "keywords": ["workflow", "codebase-understanding", "risk-scanning", "tdd", "decision-tracking"]
+  "keywords": [
+    "workflow", "context", "planning", "subagents", "testing", "risk-scanning",
+    "tdd", "decision-tracking", "autonomous", "code-review", "bugs", "debug"
+  ]
 }

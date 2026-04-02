@@ -1,29 +1,32 @@
 {
   "name": "vibe-marketplace",
-  "description": "Structured workflows for Claude Code. Understand codebases, track decisions, catch risks.",
+  "description": "Persistent project context, auto-generated test harness, and disciplined development workflows for Claude Code.",
   "owner": {
-    "name": "Jack Lutz",
-    "email": "jack@jwlutz.com"
+    "name": "dukesmith0",
+    "url": "https://github.com/dukesmith0"
   },
   "metadata": {
-    "description": "Structured workflows for Claude Code inspired by Boris Cherny's methodology. Persistent codebase understanding, decision tracking, risk scanning, and disciplined development workflows.",
-    "version": "2.1.0"
+    "description": "Persistent .vibe/ project context that survives across sessions. Auto-generated debug/ test harness. Subagent-orchestrated workflows for planning, implementation, review, and testing.",
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "vibe",
       "source": "./",
-      "description": "Structured workflows for Claude Code. Understand codebases, track decisions, catch risks.",
-      "version": "2.1.0",
+      "description": "Persistent project context, auto-generated test harness, and disciplined development workflows for Claude Code.",
+      "version": "3.0.0",
       "author": {
-        "name": "Jack Lutz",
-        "email": "jack@jwlutz.com"
+        "name": "dukesmith0",
+        "url": "https://github.com/dukesmith0"
       },
-      "repository": "https://github.com/jwlutz/claude_code_framework",
+      "repository": "https://github.com/dukesmith0/vibe-framework",
       "license": "MIT",
-      "keywords": ["workflow", "codebase-understanding", "risk-scanning", "tdd", "decision-tracking"],
+      "keywords": [
+        "workflow", "context", "planning", "subagents", "testing", "risk-scanning",
+        "tdd", "decision-tracking", "autonomous", "code-review", "bugs", "debug"
+      ],
       "category": "productivity",
-      "tags": ["development", "productivity", "code-quality"]
+      "tags": ["development", "productivity", "code-quality", "context-management", "testing"]
     }
   ]
 }

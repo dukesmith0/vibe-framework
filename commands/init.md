@@ -1,73 +1,186 @@
 ---
-description: Analyze this codebase and build persistent understanding
+description: Analyze codebase and create .vibe/ context + debug/ test harness
 ---
 
-Analyze this codebase and create a `.vibe/understanding.md` file that persists across sessions.
+Use TodoWrite to track progress through phases.
 
-## Steps
+## Pre-compute
 
-1. **Map the structure** - Use Glob to find all source files. Ignore: node_modules, .git, __pycache__, .venv, venv, build, dist, .pytest_cache
+```bash
+# Version control
+git rev-parse --git-dir 2>/dev/null && echo "git:yes" || echo "git:none"
+git remote -v 2>/dev/null | head -2
 
-2. **Identify the architecture**:
-   - What language(s) and framework(s)?
-   - What are the entry points?
-   - How is code organized?
-   - For each framework/library identified, if Context7 is available use it (resolve-library-id then query-docs) to verify your understanding — otherwise use WebSearch or source code
+# Existing state
+test -d .vibe && echo "vibe:exists" || echo "vibe:none"
+test -d debug && echo "debug:exists" || echo "debug:none"
 
-3. **Understand each component**:
-   - Read the key files
-   - What does each module/class do?
-   - How do they connect?
+# Test framework detection (order matters - first match wins)
+test -f pytest.ini && echo "test:pytest" || \
+(grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || \
+(test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || \
+(test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || \
+(node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || \
+(grep -q "^test:" Makefile 2>/dev/null && echo "test:make") || \
+(test -f go.mod && echo "test:go") || \
+(test -f Cargo.toml && echo "test:cargo") || \
+echo "test:none"
 
-4. **Find patterns and conventions**:
-   - Naming conventions
-   - Error handling approach
-   - Testing patterns
-
-5. **Identify risks**:
-   - TODO/FIXME/HACK comments
-   - Missing error handling
-   - Hardcoded values
-
-## Output
-
-Create `.vibe/understanding.md`:
-```markdown
-# Codebase Understanding
-
-Generated: [date]
-
-## Summary
-[1-2 sentences: what this codebase does]
-
-## Architecture
-- **Type**: [e.g., Python backtesting framework]
-- **Languages**: [list]
-- **Entry points**: [main files with paths]
-- **Organization**: [how code is structured]
-
-## Components
-[For each major component:]
-### [Name]
-- **Path**: [location]
-- **Purpose**: [what it does]
-- **Key classes/functions**: [list]
-- **Depends on**: [other components]
-
-## Data Flow
-[How data moves through the system]
-
-## Patterns
-- [Convention 1]
-- [Convention 2]
-
-## Risks
-- 🔴 **Critical**: [if any]
-- 🟡 **Warning**: [issues]
-- 📝 **TODOs**: [count and notable ones]
-
-## Glossary
-- **[term]**: [meaning]
+# Language detection
+ls *.py **/*.py 2>/dev/null | head -1 && echo "lang:python"
+ls *.ts *.tsx **/*.ts **/*.tsx 2>/dev/null | head -1 && echo "lang:typescript"
+ls *.js *.jsx **/*.js **/*.jsx 2>/dev/null | head -1 && echo "lang:javascript"
+ls *.go **/*.go 2>/dev/null | head -1 && echo "lang:go"
+ls *.rs **/*.rs 2>/dev/null | head -1 && echo "lang:rust"
 ```
 
-After creating, print a brief summary of what you found.
+## Phase 1 - Version control
+
+Check git status and offer setup if needed:
+
+- If no git repo: ask "Initialize git repository? [yes/no]". If yes: `git init`
+- If git but no remote: ask "Create a GitHub repository? [yes/no]". If yes: ask public/private, run `gh repo create --source=. --push` with appropriate flags
+- If git + remote: note repo info and continue
+
+## Phase 2 - .vibe/ structure
+
+If `.vibe/` exists: do incremental update (act like `/vibe:refresh`). Report: "Existing .vibe/ found. Updating."
+If not: create full structure:
+
+```bash
+mkdir -p .vibe/docs
+```
+
+Create these files (content below):
+- `.vibe/understanding.md` - populated in Phase 3
+- `.vibe/current.md` - `# No active task`
+- `.vibe/plans.md` - `# Plans`
+- `.vibe/bugs.md` - see template below
+- `.vibe/risks.md` - populated in Phase 4
+- `.vibe/future.md` - `# Future Plans`
+- `.vibe/decisions.md` - see template below
+
+**bugs.md template:**
+```markdown
+# Bugs
+Next ID: 1
+
+## Open
+
+## Deferred
+
+## Resolved
+```
+
+**decisions.md template:**
+```markdown
+# Decisions
+
+## Technical Decisions
+
+## Assumptions
+
+## Learned Lessons
+
+## Plan Archive
+```
+
+## Phase 3 - Codebase analysis
+
+Scan codebase and write findings to `understanding.md`. Use token-efficient format.
+
+1. Scan structure with Glob (exclude: `node_modules, .git, __pycache__, .venv, venv, build, dist, .pytest_cache, debug/, .vibe/`)
+2. **Top-level first:** architecture type (monorepo, single-app, library, CLI), languages, entry points, high-level organization
+3. **Deep dive on key directories:** read main files, understand components, data flow, dependencies
+4. **Patterns:** naming conventions, error handling, test conventions, config patterns
+5. Write to `understanding.md` in this format:
+
+```markdown
+# project-name
+Last: YYYY-MM-DD | N files | Languages
+
+## Stack
+One line per technology. Framework + version + purpose.
+
+## Architecture
+2-3 sentences. Type, structure, key directories.
+
+## Components
+One line per component: Name: path. Purpose. Key deps.
+
+## Patterns
+- Bullet per pattern observed
+
+## Tests
+Framework, pattern, run command.
+
+## Docs Index
+- [Name](docs/path) - Description
+```
+
+## Phase 4 - Risk scan
+
+Run risk-detection skill patterns against codebase using Grep. Write findings to `risks.md`:
+
+```markdown
+# Risks
+Next ID: RN | Last scan: DATE | Baseline: counts per level
+
+## Critical
+#R1 [CRITICAL] Description. file:line (found DATE)
+
+## High
+...
+
+## Medium
+...
+
+## Low
+...
+
+## Resolved
+```
+
+## Phase 5 - Docs indexing
+
+If `.vibe/docs/` contains files:
+- Generate docs index section in `understanding.md`
+- For heavy formats (PDF, images): generate companion `.md` with extracted text
+
+## Phase 6 - Test framework selection
+
+If test framework already detected from pre-compute: use it. Report which one.
+
+If no framework detected: ask user with recommendation based on languages:
+- Python -> "Recommend pytest (fast, fixtures, plugins). Or specify another."
+- TypeScript/JavaScript -> "Recommend vitest (fast, ESM native). Or jest if preferred."
+- Go -> `go test` (built-in, no choice needed)
+- Rust -> `cargo test` (built-in, no choice needed)
+- Multi-language -> ask per language
+
+Record choice in `understanding.md` Tests section.
+
+## Phase 7 - debug/ test harness
+
+If `debug/` exists with user-written tests: ask "Merge existing tests into generated suite or start fresh?" Default: merge.
+
+Create `debug/` structure based on languages:
+- **Single language:** flat structure (`debug/conftest.py` or `debug/setup.ts` + test files)
+- **Multi-language:** per-language subdirectories (`debug/python/`, `debug/typescript/`)
+
+Generate initial tests covering:
+- **Functionality:** happy path + error paths for key components identified in Phase 3
+- **Edge cases:** empty inputs, boundary values, null handling for public APIs
+- **Security:** check for patterns from risk-detection skill (hardcoded secrets, injection)
+
+Run `debug/` suite to verify baseline passes.
+
+## Phase 8 - Output summary
+
+Report:
+- Git: repo status (local/remote/none)
+- Components: count identified
+- Risks: count per impact level (CRITICAL/HIGH/MEDIUM/LOW)
+- Patterns: count identified
+- Tests: count generated, framework used
+- Debug/: suite status (pass/fail, count)

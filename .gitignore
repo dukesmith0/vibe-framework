@@ -1,16 +1,18 @@
-# Generated vibe folders in user projects are meant to be committed
-# This .gitignore is for the plugin source itself
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Editor files
+# Editor
 *.swp
 *.swo
 *~
 .idea/
 .vscode/
 
-# Temp files
-temp_*.json
+# Temp
+*.tmp
+*.bak
+
+# Debug artifacts (track test files, ignore generated snapshots/fixtures)
+debug/.snapshots/
+debug/temp-fixtures/

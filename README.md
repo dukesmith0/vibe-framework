@@ -1,42 +1,28 @@
-# Claude Code Framework
+# Vibe Framework
 
-Structured workflows for Claude Code. Understand your codebase, track decisions, and catch risks before they become problems.
+Persistent project context, auto-generated test harness, and disciplined AI development workflows for Claude Code.
 
-Inspired by [Boris Cherny's Claude Code workflow](https://howborisusesclaudecode.com/) — plan before coding, verify your work, and build persistent context.
+Originally created by [Jack Lutz](https://github.com/jwlutz). Forked and extended by [dukesmith0](https://github.com/dukesmith0).
 
 ## Why Use This?
 
-AI coding assistants are powerful, but without structure they can:
-- Make changes without understanding the broader system
-- Introduce bugs by ignoring existing patterns
-- Lose context between sessions
-- Miss critical risks in new code
+AI coding assistants lose context between sessions and can make changes without understanding the broader system. Vibe Framework fixes this with:
 
-Claude Code Framework adds **discipline** to AI-assisted development. It creates persistent context that survives across sessions, enforces review checkpoints, and tracks every decision.
+- **Persistent context** in `.vibe/` that survives across sessions
+- **Auto-generated tests** in `debug/` that validate everything
+- **Structured workflows** that plan before coding, review after, and track every decision
+- **Subagent orchestration** with specialized agents for exploration, implementation, review, and testing
 
 ## Installation
 
-Add the marketplace and install the plugin:
-
 ```bash
-# Add the marketplace
-/plugin marketplace add jwlutz/claude_code_framework
-
-# Install the vibe plugin
-/plugin install vibe@vibe-marketplace
-```
-
-Or from the CLI:
-
-```bash
+claude plugin marketplace add dukesmith0/vibe-framework
 claude plugin install vibe@vibe-marketplace
 ```
 
-That's it. The commands are now available in any project.
-
 ### Team Installation
 
-Add this to your project's `.claude/settings.json` to auto-prompt teammates:
+Add to your project's `.claude/settings.json`:
 
 ```json
 {
@@ -44,7 +30,7 @@ Add this to your project's `.claude/settings.json` to auto-prompt teammates:
     "vibe-marketplace": {
       "source": {
         "source": "github",
-        "repo": "jwlutz/claude_code_framework"
+        "repo": "dukesmith0/vibe-framework"
       }
     }
   },
@@ -57,99 +43,83 @@ Add this to your project's `.claude/settings.json` to auto-prompt teammates:
 ## Quick Start
 
 ```bash
-# In your project directory
-claude
-
-# Initialize understanding of your codebase
-/vibe:init
-
-# Now Claude knows your architecture, patterns, and risks
-/vibe:ask "How does authentication work?"
-
-# Start a task with the full workflow
-/vibe:go Add rate limiting to the API
-
-# Or go TDD style
-/vibe:tdd Add input validation to the signup form
+/vibe:init          # Analyze codebase, create .vibe/ and debug/
+/vibe:plan Add auth # Brainstorm, plan, then execute or defer
+/vibe:go            # Continue with the plan
+/vibe:review        # Adversarial review when ready
+/vibe:commit        # Smart commit with test gate
 ```
 
 ## Commands
 
+**Getting started:**
 | Command | Description |
 |---------|-------------|
-| `/vibe:init` | Analyze codebase and create persistent understanding |
-| `/vibe:ask <question>` | Ask questions using stored context |
-| `/vibe:go <task>` | Full workflow: explore, plan, implement, review, test |
-| `/vibe:tdd <task>` | Test-driven development: write tests first, then implement |
-| `/vibe:review` | Adversarial review + Playwright verification + code simplification |
-| `/vibe:oneshot` | End-to-end: clarify intent, implement, review, and present |
-| `/vibe:commit` | Smart commit, push, and optionally create a PR |
-| `/vibe:learn <lesson>` | Record a learning for future sessions |
-| `/vibe:status` | Check if understanding exists and its state |
-| `/vibe:risks` | Scan for security issues, TODOs, and code smells |
-| `/vibe:log` | View the decision history for this project |
+| `/vibe:init` | Analyze codebase, create `.vibe/` context + `debug/` test harness |
+| `/vibe:help` | Show commands and suggest next action |
+
+**Planning:**
+| Command | Description |
+|---------|-------------|
+| `/vibe:plan <goal>` | Brainstorm, ask questions, create plan, execute or defer |
+| `/vibe:ask <question>` | Answer questions using context + codebase search |
+
+**Building:**
+| Command | Description |
+|---------|-------------|
+| `/vibe:go <task>` | Full workflow: explore, plan, implement, review, verify |
+| `/vibe:tdd <feature>` | Test-driven: write tests first, implement until green |
+| `/vibe:oneshot <task>` | Minimal-stop end-to-end workflow |
+| `/vibe:ralph <plan>` | Autonomous multi-task loop with parallel execution |
+
+**Maintaining:**
+| Command | Description |
+|---------|-------------|
+| `/vibe:review` | Five-part adversarial review with test gate |
+| `/vibe:commit` | Smart commit with test gate and .vibe/ sync |
+| `/vibe:refresh` | Sync .vibe/ after manual code changes |
+| `/vibe:note <content>` | Quick entry to bugs, risks, decisions, or future plans |
+| `/vibe:add <path>` | Import reference docs to .vibe/docs/ |
 
 ## What Gets Created
 
-After running `/vibe:init`, a `.vibe/` folder appears in your project:
-
 ```
 .vibe/
-  understanding.md   # Architecture, components, patterns
-  decisions.md       # Why things were done (builds over time)
-  risks.md           # Known issues and code smells
-  learnings.md       # Lessons learned (don't repeat mistakes)
-  work/
-    current.md       # Active task tracking
+├── understanding.md   # Architecture, stack, components, patterns
+├── current.md         # Active task state and progress
+├── plans.md           # Current plan with success criteria
+├── bugs.md            # Tracked bugs with IDs and impact levels
+├── risks.md           # Risks with IDs, impact, and baseline tracking
+├── future.md          # Backlog and deferred plans
+├── decisions.md       # Decisions, assumptions, and learned lessons
+└── docs/              # Reference materials
+
+debug/
+├── conftest.py        # Test fixtures (framework-dependent)
+├── test_*.py          # Auto-generated comprehensive tests
+└── ...                # Mirrors source structure
 ```
 
-**Commit this folder.** It gives Claude (and your team) persistent context.
+**Commit both folders.** They give Claude persistent context and comprehensive test coverage across sessions.
 
-## The `/vibe:go` Workflow
+## The Primary Loop
 
-When you run `/vibe:go <task>`, the framework orchestrates specialized subagents:
+```
+/vibe:init                    # Once per project
+  -> /vibe:plan <goal>        # Brainstorm and plan
+    -> /vibe:go               # Implement the plan
+      -> /vibe:review         # Review changes
+        -> /vibe:commit       # Ship it
+  -> /vibe:plan <next goal>   # Repeat
+```
 
-1. **Pre-compute** — Inline bash gathers git status, test runner, and existing context
-2. **Understand** — Explorer subagent analyzes relevant code, reads project context, looks up library docs
-3. **Plan** — Main conversation presents options with tradeoffs, defines success criteria, waits for approval
-4. **Implement** — Engineer subagent makes changes following project patterns, verifying APIs via docs
-5. **Review + Test** — Reviewer and tester subagents run **in parallel**: adversarial code review + test suite
-6. **Risk Check** — Main conversation compares risks baseline
-7. **Verify & Complete** — Main conversation checks success criteria, records decisions
-
-No code is written until you approve the plan. Subagents research before acting — they look up docs, not guess.
-
-## The `/vibe:tdd` Workflow
-
-Test-driven development with subagent orchestration:
-
-1. **Understand** — Explorer subagent analyzes the target, finds test patterns
-2. **Write Tests** — Engineer subagent writes tests (looks up test framework API docs)
-3. **Commit Tests** — Main conversation locks in the test contract
-4. **Implement** — Engineer subagent writes minimum code to pass tests
-5. **Iterate** — Tester subagent runs tests, loop until green
-6. **Complete** — Main conversation commits the passing implementation
-
-## For Consultants
-
-Share this with clients who are experimenting with AI coding. It provides:
-
-- **Guardrails** - Prevents AI from making unreviewed changes
-- **Visibility** - Every decision is recorded with rationale
-- **Consistency** - Same workflow regardless of who's prompting
-- **Safety Net** - Risk scanning catches issues before commit
-- **Memory** - Learnings persist across sessions
-
-Install it in client repos before they start using Claude Code.
+Every step auto-updates `.vibe/` files and `debug/` tests. Bugs and risks get IDs (#3, #R2) so you can fix them directly: `/vibe:go fix #3`.
 
 ## Requirements
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
+- `gh` CLI (optional, for GitHub repo creation and PR workflows)
 
 ## License
 
 MIT - see [LICENSE](LICENSE)
-
----
-
-Built by [Jack Lutz](https://github.com/jwlutz)

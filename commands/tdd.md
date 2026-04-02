@@ -1,109 +1,49 @@
 ---
-description: Test-driven development workflow
-argument-hint: <feature or fix to implement>
+description: Test-driven development - write tests first, lock contract, implement until green
+argument-hint: <feature>
 ---
 
-Implement a feature using test-driven development with subagent orchestration. Write tests first, then make them pass.
+Use TodoWrite to track phases.
 
-## Pre-compute Context
-
+## Pre-compute
 ```bash
-echo "=== TEST RUNNER ===" && (test -f pytest.ini && echo "pytest" || test -f pyproject.toml && grep -q pytest pyproject.toml && echo "pytest" || test -f package.json && node -e "const p=require('./package.json'); p.scripts?.test ? console.log('npm test') : process.exit(1)" 2>/dev/null || test -f Makefile && grep -q "^test:" Makefile && echo "make test" || echo "No test runner detected")
-echo "=== TEST DIRS ===" && (ls -d tests/ test/ spec/ __tests__/ 2>/dev/null || echo "No test directory found")
-echo "=== VIBE CONTEXT ===" && (test -f .vibe/understanding.md && head -20 .vibe/understanding.md || echo "No understanding — consider /vibe:init")
-echo "=== VIBE LEARNINGS ===" && (test -f .vibe/learnings.md && cat .vibe/learnings.md || echo "No learnings yet")
+git status -s 2>/dev/null | head -5; ls .vibe/ 2>/dev/null; head -1 .vibe/current.md 2>/dev/null
+test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
 ```
+If no `.vibe/`: "No vibe context found. Run /vibe:init first."
 
-## Phase 1: Understand
+## Phase 1 - Setup
+Read `.vibe/` context via vibe-context skill. Update `current.md`: `# Current Task - TDD: [feature] | Via: /vibe:tdd`
 
-Spawn an **explorer** subagent via the Task tool:
+## Phase 2 - Explore
+Dispatch explorer (`subagent_type="vibe:explorer"` or `"general-purpose"`). Prompt with feature + understanding.md patterns/tests sections. Instruction: "Find test patterns (describe/it? fixtures? table-driven?), test framework API, where tests should live (colocated or debug/). Report: target files, patterns, framework, test location."
 
-```
-Use the Task tool with subagent_type="vibe:explorer" (or "general-purpose" if unavailable) to:
-- Read .vibe/understanding.md and .vibe/learnings.md for project context
-- Understand what we're building or fixing: [TASK]
-- Find existing test files and read them to understand test patterns/conventions
-- Identify the test framework in use and look up its API via Context7 if available
-- Note which files will need tests and which will need implementation
-```
+## Phase 3 - Write tests (RED)
+Dispatch engineer (`subagent_type="vibe:engineer"` or `"general-purpose"`). Prompt with: feature, explorer findings, test location, project test style. Instruction: "Write ONLY tests. NO implementation. Cover: happy path, error paths, edge cases (empty, boundary, null). Match project test patterns. Record requirement assumptions in decisions.md."
 
-Review the explorer's findings. Present understanding to user.
+## Phase 4 - Verify failure
+Dispatch tester (`subagent_type="vibe:tester"` or `"general-purpose"`): run new tests.
+- Must FAIL for the right reason (missing implementation, not typo/import error).
+- Wrong failure reason? Fix tests, re-run.
 
-## Phase 2: Write Tests
+## Phase 5 - Approve tests
+**[STOP]** Present tests with what each validates. User approves the contract.
 
-Spawn an **engineer** subagent via the Task tool to write tests:
+## Phase 6 - Commit tests
+Commit tests only. Contract locked. **Tests must NOT be modified after this.**
 
-```
-Use the Task tool with subagent_type="vibe:engineer" (or "general-purpose" if unavailable) to:
-- Write test cases for: [TASK]
-- Follow the project's existing test patterns from explorer findings
-- If Context7 is available, look up the test framework API before writing tests
-- Cover: happy path, edge cases, error cases
-- DO NOT write any implementation code
-- DO NOT run the tests — they should fail (implementation doesn't exist yet)
-- Output: list of test files created and what each test verifies
-```
+## Phase 7 - Implement (GREEN)
+Dispatch engineer (`subagent_type="vibe:engineer"` or `"general-purpose"`). Prompt with: committed test files, understanding.md patterns. Instruction: "Write minimal code to pass ALL tests. Do not modify tests. List assumptions in output."
+Write assumptions to `decisions.md` as `[CLAUDE]`.
 
-Show the user the tests and explain what each test verifies.
+## Phase 8 - Iterate
+Dispatch tester (`subagent_type="vibe:tester"` or `"general-purpose"`): run all tests (project + debug/ + TDD).
+- All pass? Proceed.
+- Failures? Engineer fixes implementation (NOT tests), tester re-runs. Max 3 iterations.
 
-**STOP and wait for user approval of the tests.**
-
-## Phase 3: Commit Tests
-
-This phase runs in the **main conversation** (needs git interaction).
-
-After approval, commit the tests:
-```bash
-git add [test files] && git commit -m "test: add tests for [feature]"
-```
-
-## Phase 4: Implement
-
-Spawn an **engineer** subagent via the Task tool:
-
-```
-Use the Task tool with subagent_type="vibe:engineer" (or "general-purpose" if unavailable) to:
-- Write the minimum code to make the tests pass
-- DO NOT edit the test files
-- Follow project patterns from .vibe/understanding.md
-- If Context7 is available, look up library APIs before using them
-- Keep it simple — only enough code to pass tests
-- Output: list of files changed
-```
-
-## Phase 5: Iterate
-
-Spawn a **tester** subagent via the Task tool:
-
-```
-Use the Task tool with subagent_type="vibe:tester" (or "general-purpose" if unavailable) to:
-- Run the test suite: [test command]
-- Report pass/fail with counts and failure details
-```
-
-If tests fail:
-- Read the failure output carefully
-- Fix the implementation (NOT the tests) — spawn another engineer subagent if needed
-- Run tester again
-- **Keep iterating until all tests pass. Do not give up.**
-
-## Phase 6: Complete
-
-This phase runs in the **main conversation**.
-
-When all tests pass:
-
-```
-TDD cycle complete
-
-Tests written: [count]
-Tests passing: [count]
-Files changed: [list]
-
-Ready to commit? [yes / show diff / refactor first]
-```
-
-Commit the implementation:
-```bash
-git add [implementation files] && git commit -m "feat: implement [feature]"
-```
+## Phase 9 - Update .vibe/ + commit
+- `decisions.md`: test assumptions, requirement gaps, implementation choices
+- `bugs.md`: bugs found (next ID + impact)
+- `debug/`: regression tests for resolved bugs
+- `current.md`: clear to `# No active task`
+Commit implementation. Summary: tests, files changed, iterations, assumptions.

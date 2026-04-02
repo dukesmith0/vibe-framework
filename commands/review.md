@@ -1,99 +1,57 @@
 ---
-description: Adversarial review with optional Playwright testing and code simplification
-argument-hint: [optional: specific files or area to review]
+description: Five-part adversarial review - code quality, bugs, functionality, risks, simplification
+argument-hint: [scope]
 ---
 
-Review recent changes through three lenses with subagent orchestration: adversarial code review, browser-level verification (if applicable), and code simplification.
+Use TodoWrite to track progress.
 
-## Pre-compute Context
-
+## Pre-compute
 ```bash
-echo "=== GIT STATUS ===" && git status --short 2>/dev/null || echo "Not a git repo"
-echo "=== CHANGED FILES ===" && git diff --name-only HEAD~1 2>/dev/null || git diff --cached --name-only 2>/dev/null || echo "No recent changes"
-echo "=== DIFF ===" && git diff HEAD~1 2>/dev/null || git diff --cached 2>/dev/null || git diff 2>/dev/null || echo "No diff available"
-echo "=== PLAYWRIGHT ===" && (test -f playwright.config.ts && echo "playwright.config.ts found" || test -f playwright.config.js && echo "playwright.config.js found" || (test -f package.json && grep -q playwright package.json && echo "Playwright in package.json") || echo "No Playwright detected")
-echo "=== DEV SERVER ===" && (test -f package.json && node -e "const p=require('./package.json'); const s=p.scripts||{}; console.log(s.dev||s.start||'none')" 2>/dev/null || echo "No dev server detected")
-echo "=== VIBE CONTEXT ===" && (test -f .vibe/understanding.md && echo "Understanding: exists" && head -20 .vibe/understanding.md || echo "Understanding: none")
-echo "=== VIBE RISKS ===" && (test -f .vibe/risks.md && echo "Risks baseline: exists" || echo "Risks baseline: none")
+git diff --name-only 2>/dev/null | head -20; git diff --stat 2>/dev/null; git diff --staged --name-only 2>/dev/null | head -10
+ls .vibe/ 2>/dev/null; head -3 .vibe/risks.md 2>/dev/null; head -3 .vibe/plans.md 2>/dev/null
+test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "try{const p=require('./package.json');console.log(p.scripts?.test?'test:'+p.scripts.test:'test:none')}catch{}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
+test -f playwright.config.ts -o -f playwright.config.js && echo "playwright:yes" || (grep -q playwright package.json 2>/dev/null && echo "playwright:yes") || echo "playwright:no"
+node -e "try{const p=require('./package.json');console.log('devserver:'+(p.scripts?.dev||p.scripts?.start||p.scripts?.serve||'none'))}catch{}" 2>/dev/null
 ```
+If no `.vibe/`: "No vibe context found. Run /vibe:init first."
 
-## Phase 1: Adversarial Review + Playwright (parallel)
+## Phase 1 - Five-part review
 
-Spawn **reviewer** and **tester** subagents **in parallel** via the Task tool (both in a single message):
+Dispatch reviewer + tester **in parallel (single message)**:
 
-**Reviewer subagent:**
-```
-Use the Task tool with subagent_type="vibe:reviewer" (or "general-purpose" if unavailable) to:
-- Review the changed files as a hostile critic — try to break the code
-- Read .vibe/understanding.md for project patterns
-- Verify library APIs are used correctly (look up docs via Context7 if available)
+**Reviewer** (`subagent_type="vibe:reviewer"` or `"general-purpose"`). Prompt with: changed files (git diff), plans.md, understanding.md patterns, risks.md baseline, bugs.md. Instruction:
+"Adversarial five-part review:
+1. **Spec compliance:** match intent/plan from plans.md?
+2. **Code quality:** patterns, style, error handling, security (validation, auth, secrets, injection)
+3. **Bug review:** logic errors, off-by-one, null, race conditions, edge cases, error propagation. Cross-check bugs.md for reintroductions.
+4. **Functionality:** does it work as intended? All paths reachable and tested? Integrations correct?
+5. **Risk scan:** compare vs risks.md baseline. Report delta per impact level.
+Output: `[CRITICAL/HIGH/MEDIUM/LOW] file:line: issue - fix`. Verdict: APPROVE or NEEDS FIXES."
 
-Check:
-- Correctness: trace code paths, edge cases (null, undefined, empty, 0, negative), off-by-one, race conditions
-- Security: unsanitized input, injection vectors (SQL, XSS, command, path traversal), secrets in logs, auth checks
-- Reliability: external service failures, unhandled exceptions, deadlocks, memory leaks
-- Design: coupling, implicit assumptions, readability
+**Tester** (`subagent_type="vibe:tester"` or `"general-purpose"`). Instruction: "Run project tests, debug/ tests, linters. If Playwright detected + frontend changes: `npx playwright test --reporter=list` (check dev server at localhost:3000/5173, start with 60s timeout if down). Skip Playwright for backend-only."
 
-Output format:
-  CRITICAL: [file:line] — [issue] — [how to exploit/trigger]
-  WARNING: [file:line] — [issue] — [why it matters]
-  SUGGESTION: [file:line] — [issue] — [improvement]
-  Verdict: [PASS / NEEDS FIXES]
-```
+## Phase 2 - Write findings + test gaps
 
-**Playwright subagent (if applicable — skip if no Playwright detected or changes are backend/config only):**
-```
-Use the Task tool with subagent_type="vibe:tester" (or "general-purpose" if unavailable) to:
-- Start the dev server if needed
-- Run existing Playwright tests: npx playwright test --reporter=list
-- Use browser tools to navigate affected pages, take snapshots, check for console errors, verify network requests
-- Test edge cases identified in the review
-- Report: existing tests pass/fail, pages checked, console errors, network failures, visual issues, verdict
-```
+- `bugs.md`: bugs found with next ID and impact
+- `risks.md`: new risks with next ID. Resolved risks (file:line gone) to Resolved section with date. Update baseline.
+- Check `debug/` for gaps: changed code without tests? Generate missing tests, verify they pass.
 
-**If CRITICAL issues found, STOP and ask user whether to fix now or continue.**
+## Phase 3 - Review gate
 
-## Phase 2: Simplification
+**[STOP IF CRITICAL/HIGH]** Present findings with verdict.
 
-This phase runs in the **main conversation** (needs user approval per change).
+## Phase 4 - Simplification
 
-Review the changed code for opportunities to simplify **without changing behavior**.
+Propose changes with before/after snippets for recently changed code only. **[STOP]** User approves individually.
+Rules: preserve functionality, don't touch untouched code, don't add features/abstractions/renames.
+Valid: dead code, redundant conditionals, verbose patterns, duplicated logic.
 
-**Rules:**
-- Every simplification must preserve exact functionality
-- Only simplify code that was recently modified (from the diff)
-- Do not refactor code that wasn't touched
-- Do not add features, abstractions, or "improvements"
+## Phase 5 - Summary + next steps
 
-### What to Simplify
-- Redundant conditionals or branches that can never be reached
-- Variables assigned and used only once with no clarity benefit
-- Overly verbose patterns that have simpler idiomatic equivalents
-- Dead code introduced by the changes
-- Duplicated logic within the changed code
+Impact counts, verdict, risk delta, test results, simplifications applied.
 
-### What NOT to Simplify
-- Working code outside the diff
-- Code that is verbose for a good reason (clarity, debugging)
-- Patterns that match the rest of the codebase even if not your preference
-
-Show proposed simplifications with before/after snippets.
-
-**STOP and wait for user to approve which simplifications to apply.**
-
-Apply only the approved simplifications.
-
-## Phase 3: Summary
-
-```
-REVIEW COMPLETE
-
-Adversarial review:  [PASS / NEEDS FIXES] — [N critical, N warning, N suggestion]
-Playwright:          [PASS / NEEDS FIXES / SKIPPED] — [details]
-Simplification:      [CLEAN / N changes applied]
-
-Overall: [READY TO SHIP / NEEDS ATTENTION]
-```
-
-Update `.vibe/risks.md` with any new findings.
-Update `.vibe/decisions.md` if simplifications were applied.
+Based on verdict:
+- `APPROVE`: "Ready to commit. Run `/vibe:commit`."
+- `NEEDS FIXES` with bugs: "Run `/vibe:go fix #N` or `/vibe:plan` for broader fix."
+- `NEEDS FIXES` with risks: "Run `/vibe:go fix #RN` to address."
+- Mixed: list each ID. "Fix individually or `/vibe:plan fix review findings` to tackle together."
