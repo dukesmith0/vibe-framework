@@ -10,8 +10,7 @@ Use TodoWrite to track progress. Use EnterPlanMode at start to prevent accidenta
 ```bash
 git status -s 2>/dev/null | head -5
 ls .vibe/ 2>/dev/null
-head -5 .vibe/plans.md 2>/dev/null
-head -1 .vibe/current.md 2>/dev/null
+head -10 .vibe/current.md 2>/dev/null
 cat .vibe/future.md 2>/dev/null
 ```
 
@@ -82,12 +81,11 @@ Record user's chosen approach as `[USER]` decision in `decisions.md`:
 **Execute now:**
 - Check `current.md`. If active task: "Active task found: [description]. Resume, abandon, or start new?"
   - Resume: return to active task
-  - Abandon: archive to `decisions.md` Plan Archive with outcome "abandoned", clear `current.md`, clear `plans.md`
-  - Start new: archive current task and plan, clear both, proceed
-- Archive existing plan in `plans.md` if any (to `decisions.md` Plan Archive). Then clear `plans.md`.
-- Write new plan to `plans.md` (with Goal, Approach, Success Criteria, Tasks sections).
-- Update `current.md` with initial progress checklist (same format as go Phase 5, starting at phase 6).
-- Automatically begin `/vibe:go` workflow at Phase 4 (implement). Plan already written by this command, so go skips Phases 1-3 (entry routing, explore, plan+approve). Go reads `plans.md` for the plan and `current.md` for state.
+  - Abandon: archive to `decisions.md` Plan Archive with outcome "abandoned", clear `current.md`
+  - Start new: archive current task plan, clear `current.md`, proceed
+- Archive existing plan in `current.md` if any (to `decisions.md` Plan Archive).
+- Write new plan to `current.md` (with task header, Goal, Approach, Success Criteria, Tasks, Progress sections).
+- Automatically begin `/vibe:go` workflow at Phase 4 (implement). Plan already written by this command, so go skips Phases 1-3 (entry routing, explore, plan+approve). Go reads `current.md` for the plan and state.
 
 **Save for later:**
 - Append to `future.md`: `- [Goal summary]. [Approach chosen]. [Priority/context].`

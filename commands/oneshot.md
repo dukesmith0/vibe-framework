@@ -53,7 +53,7 @@ Record user's confirmed understanding as `[USER]` decision in `decisions.md`.
 
 ## Phase 4 - Plan + Implement
 
-- Plan internally. Write to `plans.md` with success criteria. Update `current.md`.
+- Plan internally. Write plan with success criteria to `current.md`.
 - Dispatch engineer subagent (`subagent_type="vibe:engineer"` or `"general-purpose"`):
   - Prompt with: task, approach, files to change, patterns to follow, success criteria
   - Instruction: "Implement following project patterns. Generate/update debug/ tests. List any assumptions and approach choices in your output."
@@ -96,4 +96,4 @@ Rules: preserve exact functionality, don't touch untouched code, don't add featu
 ## Phase 11 - Present
 
 Summary: changes made, decisions recorded, test results, risk delta.
-Clear `current.md`. Archive plan to `decisions.md` Plan Archive. Clear `plans.md`.
+Clear `current.md` to `# No active task`. Archive plan to `decisions.md` Plan Archive.

@@ -8,7 +8,7 @@ Use TodoWrite to track progress.
 ## Pre-compute
 ```bash
 git status -s 2>/dev/null | head -5; git branch --show-current 2>/dev/null
-ls .vibe/ 2>/dev/null; head -5 .vibe/plans.md 2>/dev/null; head -1 .vibe/current.md 2>/dev/null
+ls .vibe/ 2>/dev/null; head -10 .vibe/current.md 2>/dev/null
 test -f pytest.ini && echo "test:pytest" || (grep -q pytest pyproject.toml 2>/dev/null && echo "test:pytest") || (test -f vitest.config.ts -o -f vitest.config.js && echo "test:vitest") || (test -f jest.config.ts -o -f jest.config.js && echo "test:jest") || (node -e "const p=require('./package.json');if(p.scripts?.test){console.log('test:'+p.scripts.test);process.exit(0)}else{process.exit(1)}" 2>/dev/null) || (test -f go.mod && echo "test:go") || (test -f Cargo.toml && echo "test:cargo") || echo "test:none"
 test -f playwright.config.ts -o -f playwright.config.js && echo "playwright:yes" || (grep -q playwright package.json 2>/dev/null && echo "playwright:yes") || echo "playwright:no"
 ```
@@ -24,7 +24,7 @@ Dispatch explorer (`subagent_type="vibe:explorer"` or `"general-purpose"`). Prom
 
 ## Phase 3 - Approve
 **[STOP]** Present subtask table: `| # | Subtask | Confidence | Deps | Size |`. Flag LOW confidence. User says "go" to start.
-Write plan to `plans.md`. Initialize `current.md` ralph state table.
+Write plan and ralph state table to `current.md`.
 
 ## Phase 4 - The Loop
 
@@ -54,7 +54,7 @@ Decisions: [count] | Bugs: [IDs] | Risk delta: +N/-N
 ```
 
 ## Phase 6 - Finalize
-All DONE? Archive plan to `decisions.md` Plan Archive. Update `understanding.md` if arch changed. Clear `current.md` + `plans.md`.
+All DONE? Archive plan to `decisions.md` Plan Archive. Update `understanding.md` if arch changed. Clear `current.md` to `# No active task`.
 STUCK/BLOCKED remain? Keep ralph state in `current.md` for resume.
 
 ## Phase 7 - Resume

@@ -13,10 +13,10 @@ Marketplace: .claude-plugin/marketplace.json. Registry entry for vibe-marketplac
 Settings: .claude/settings.local.json. WebSearch permission.
 
 Commands (13): init, plan, go, tdd, oneshot, ralph, review, commit, ask, note, add, refresh, help.
-- Workflow commands (go, oneshot, ralph, tdd): dispatch subagents, multi-phase, auto-update .vibe/.
+- Workflow commands (go, oneshot, ralph, tdd): dispatch subagents, multi-phase, auto-update .vibe/. Plan and progress tracked in current.md.
 - Utility commands (ask, note, add, help, refresh): lightweight, read/append operations.
 - Lifecycle commands (init, commit): create .vibe/, gate commits on tests.
-- Planning (plan): EnterPlanMode, clarifying questions, execute-or-defer.
+- Planning (plan): EnterPlanMode, clarifying questions, execute-or-defer. Plans written to current.md or deferred to future.md.
 
 Agents (4): explorer (investigate), engineer (implement), reviewer (adversarial review), tester (run tests).
 - All use vibe-context skill for context loading. All have subagent_type frontmatter.

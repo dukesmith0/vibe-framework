@@ -86,8 +86,7 @@ Add to your project's `.claude/settings.json`:
 ```
 .vibe/
 ├── understanding.md   # Architecture, stack, components, patterns
-├── current.md         # Active task state and progress
-├── plans.md           # Current plan with success criteria
+├── current.md         # Active task: plan, progress, and state
 ├── bugs.md            # Tracked bugs with IDs and impact levels
 ├── risks.md           # Risks with IDs, impact, and baseline tracking
 ├── future.md          # Backlog and deferred plans

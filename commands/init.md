@@ -54,7 +54,6 @@ mkdir -p .vibe/docs
 Create these files (content below):
 - `.vibe/understanding.md` - populated in Phase 3
 - `.vibe/current.md` - `# No active task`
-- `.vibe/plans.md` - `# Plans`
 - `.vibe/bugs.md` - see template below
 - `.vibe/risks.md` - populated in Phase 4
 - `.vibe/future.md` - `# Future Plans`

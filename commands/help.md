@@ -5,8 +5,7 @@ description: Show available vibe commands and suggest next action based on proje
 Check project state:
 ```bash
 test -d .vibe && echo "vibe:initialized" || echo "vibe:none"
-test -f .vibe/current.md && head -1 .vibe/current.md
-test -f .vibe/plans.md && head -1 .vibe/plans.md
+test -f .vibe/current.md && head -5 .vibe/current.md
 git status -s 2>/dev/null | head -1
 ```
 
@@ -19,7 +18,6 @@ Show commands grouped by use case:
 
 Suggest next action based on state:
 - No `.vibe/`? -> "Run `/vibe:init` to analyze your codebase."
-- `current.md` shows active task? -> "Active task in progress. Run `/vibe:go` to resume."
-- `plans.md` has a plan? -> "You have an active plan. Run `/vibe:go` to continue."
+- `current.md` shows active task or plan? -> "Active task in progress. Run `/vibe:go` to resume."
 - Git changes staged? -> "Changes ready. Run `/vibe:commit` to commit."
 - No git? -> "Note: No git repo detected. Most commands work, but commit/push disabled. Run `/vibe:init` to set up."

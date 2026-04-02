@@ -11,11 +11,11 @@ Load files based on caller role:
 
 | Role | Loads |
 |------|-------|
-| explorer | understanding.md (full), risks.md, bugs.md, plans.md, current.md, docs index |
-| engineer | understanding.md (patterns, components, tests), plans.md, current.md, decisions.md (recent 5) |
+| explorer | understanding.md (full), risks.md, bugs.md, current.md, docs index |
+| engineer | understanding.md (patterns, components, tests), current.md, decisions.md (recent 5) |
 | reviewer | understanding.md (patterns, tests), risks.md (baseline), bugs.md |
 | tester | understanding.md (tests section only), bugs.md (for regression checks) |
-| general | understanding.md, plans.md, current.md |
+| general | understanding.md, current.md |
 
 Read docs index from understanding.md. If current task relates to an indexed doc, load that doc on-demand from `.vibe/docs/`.
 

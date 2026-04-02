@@ -35,7 +35,7 @@ Run project tests (if configured). Same gate. Both must pass before committing.
 
 ## Phase 2 - Analyze
 
-What changed and why. Group into logical commit(s). Read `plans.md` and `current.md` for context on what was being worked on.
+What changed and why. Group into logical commit(s). Read `current.md` for context on what was being worked on.
 
 ## Phase 3 - .vibe/ sync (read AND write)
 

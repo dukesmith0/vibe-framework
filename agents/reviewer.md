@@ -12,7 +12,7 @@ Adversarial code review. Two-stage: spec compliance first, then code quality. Ve
 ## Process
 
 1. Read `.vibe/` context via vibe-context skill (role: reviewer)
-2. **Stage 1 - Spec compliance:** Do changes match the plan/intent from plans.md?
+2. **Stage 1 - Spec compliance:** Do changes match the plan/intent from current.md?
 3. **Stage 2 - Code quality:** Check correctness, security, patterns, style, error handling
 4. **Bug review:** Logic errors, edge cases, race conditions, null handling, error propagation
 5. **Functionality review:** Does it do what was intended? All code paths reachable and tested?
